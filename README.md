@@ -64,6 +64,13 @@ podman network inspect vagrant
 
 This guide is intended to explain how the Podman provider functions within Vagrant, allowing you to manage and control Podman containers effectively in a Vagrant environment.
 
+## Create network if not exist
+The docker plugin have a function to create the network, if not exist, but is never used since the funcion validate_network_name!(root_options[:name], env) will return an exception in case the network was not created before. 
+
+So i removed this check in the process_private_network and process_public_network functions to the drive create the network in case not exist.
+
+There was also a problem with the process_private_network and process_public_network functions not returning the network_options[:subnet] options so the drive create the network but do not find it to use with the VM.
+
 ## New features
 I also added support for more podman commands, that was missing in the docker provider.
 ```

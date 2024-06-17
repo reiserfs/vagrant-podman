@@ -86,11 +86,27 @@ module VagrantPlugins
         # @param [Hash] net_options Podman scoped networking options
         # @param [Hash] env Local call env
         # @return [String, Hash] Network name and updated network_options
-        def process_private_network(root_options, network_options, env)
-          if root_options[:name] && validate_network_name!(root_options[:name], env)
-            network_name = root_options[:name]
+        def process_private_network(root_options, network_options, env)                    
+          if root_options[:ip]
+            addr = IPAddr.new(root_options[:ip])
+          elsif addr.nil?
+            raise Errors::NetworkIPAddressRequired
           end
 
+          if root_options[:name]
+          #if root_options[:name] && validate_network_name!(root_options[:name], env)
+            network_name = root_options[:name]
+            if !root_options[:subnet]
+              # Only generate a subnet if not given one
+              subnet = IPAddr.new("#{addr}/#{root_options[:netmask]}")
+              network = "#{subnet}/#{root_options[:netmask]}"
+            else
+              network = root_options[:subnet]
+            end
+            network_options[:subnet] = network            
+          end
+
+          @logger.debug("network process options #{root_options[:name]},  #{root_options[:subnet]},  #{root_options[:ip]}")
           if root_options[:type].to_s == "dhcp"
             if !root_options[:ip] && !root_options[:subnet]
               network_name = "vagrant_network" if !network_name
@@ -100,12 +116,6 @@ module VagrantPlugins
               addr = IPAddr.new(root_options[:subnet])
               root_options[:netmask] = addr.prefix
             end
-          end
-
-          if root_options[:ip]
-            addr = IPAddr.new(root_options[:ip])
-          elsif addr.nil?
-            raise Errors::NetworkIPAddressRequired
           end
 
           # If address is ipv6, enable ipv6 support
@@ -150,7 +160,7 @@ module VagrantPlugins
               network_name = existing_network
             end
           end
-
+          @logger.debug("network process options #{network_name},  #{network_options[:subnet]},  #{network_options[:ip]}")
           [network_name, network_options]
         end
 
@@ -165,8 +175,23 @@ module VagrantPlugins
         # @param [Hash] env Local call env
         # @return [String, Hash] Network name and updated network_options
         def process_public_network(root_options, net_options, env)
-          if root_options[:name] && validate_network_name!(root_options[:name], env)
+          if root_options[:ip]
+            addr = IPAddr.new(root_options[:ip])
+          elsif addr.nil?
+            raise Errors::NetworkIPAddressRequired
+          end
+
+          if root_options[:name]
+            #if root_options[:name] && validate_network_name!(root_options[:name], env)
             network_name = root_options[:name]
+            if !root_options[:subnet]
+              # Only generate a subnet if not given one
+              subnet = IPAddr.new("#{addr}/#{root_options[:netmask]}")
+              network = "#{subnet}/#{root_options[:netmask]}"
+            else
+              network = root_options[:subnet]
+            end
+            network_options[:subnet] = network  
           end
           if !network_name
             valid_interfaces = list_interfaces
@@ -334,7 +359,6 @@ module VagrantPlugins
                 type, options = net_info
                 network_options = scoped_hash_override(options, :podman_network)
                 network_options.delete_if{|k,_| options.key?(k)}
-
                 case type
                 when :public_network
                   network_name, network_options = process_public_network(
@@ -345,17 +369,13 @@ module VagrantPlugins
                 else
                   next # unsupported type so ignore
                 end
-
                 if !network_name
                   raise Errors::NetworkInvalidOption, container: machine.name
                 end
-
                 if !machine.provider.driver.existing_named_network?(network_name)
-                  @logger.debug("Creating network #{network_name}")
                   cli_opts = generate_create_cli_arguments(network_options)
                   machine.provider.driver.create_network(network_name, cli_opts)
                 else
-                  @logger.debug("Network #{network_name} already created")
                   validate_network_configuration!(network_name, options, network_options, machine.provider.driver)
                 end
                 connections[net_idx] = network_name

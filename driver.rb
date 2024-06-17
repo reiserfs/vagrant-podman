@@ -252,7 +252,7 @@ module VagrantPlugins
       def podman_bridge_ip
         bridge = inspect_network("bridge")&.first
         if bridge 
-          bridge_ip = bridge.dig("IPAM", "Config", 0, "Gateway")
+          bridge_ip = bridge.dig("subnets", 0, "gateway")
         end
         return bridge_ip if bridge_ip
         @logger.debug("Failed to get bridge ip from podman, falling back to `ip`")
@@ -354,11 +354,11 @@ module VagrantPlugins
 
         network_info = inspect_network(all_networks)
         network_info.each do |network|
-          config = Array(network["IPAM"]["Config"])
+          config = Array(network["subnets"])
           if (config.size > 0 &&
-            config.first["Subnet"] == subnet_string)
-            @logger.debug("Found existing network #{network["Name"]} already configured with #{subnet_string}")
-            return network["Name"]
+            config.first["subnet"] == subnet_string)
+            @logger.debug("Found existing network #{network["name"]} already configured with #{subnet_string}")
+            return network["name"]
           end
         end
         return nil
