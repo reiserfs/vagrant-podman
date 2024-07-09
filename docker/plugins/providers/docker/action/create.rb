@@ -116,10 +116,7 @@ module VagrantPlugins
             links:      links,
             name:       container_name,
             ports:      forwarded_ports(@provider_config.has_ssh),
-            privileged: @provider_config.privileged,
-            network: @provider_config.network,
-            user:  @provider_config.user,
-            userns:  @provider_config.userns,            
+            privileged: @provider_config.privileged,          
             pty:        false,
             volumes:    @provider_config.volumes,
           }
