@@ -7,7 +7,7 @@ require 'log4r'
 require 'vagrant/util/scoped_hash_override'
 
 module VagrantPlugins
-  module PodmanProvider
+  module DockerProvider
     module Action
       class PrepareNetworks
 
@@ -17,10 +17,10 @@ module VagrantPlugins
 
         def initialize(app, env)
           @app = app
-          @logger = Log4r::Logger.new('vagrant::plugins::podman::preparenetworks')
+          @logger = Log4r::Logger.new('vagrant::plugins::docker::preparenetworks')
         end
 
-        # Generate CLI arguments for creating the podman network.
+        # Generate CLI arguments for creating the docker network.
         #
         # @param [Hash] options Options from the network config
         # @returns[Array<String>] Network create arguments
@@ -61,8 +61,8 @@ module VagrantPlugins
         #
         # @param [String] network_name Name of the network
         # @param [Hash] root_options Root networking options
-        # @param [Hash] network_options Podman scoped networking options
-        # @param [Driver] driver Podman driver
+        # @param [Hash] network_options Docker scoped networking options
+        # @param [Driver] driver Docker driver
         # @return [Boolean]
         def validate_network_configuration!(network_name, root_options, network_options, driver)
           if root_options[:ip] &&
@@ -83,10 +83,10 @@ module VagrantPlugins
         # Generate configuration for private network
         #
         # @param [Hash] root_options Root networking options
-        # @param [Hash] net_options Podman scoped networking options
+        # @param [Hash] net_options Docker scoped networking options
         # @param [Hash] env Local call env
         # @return [String, Hash] Network name and updated network_options
-        def process_private_network(root_options, network_options, env)                    
+        def process_private_network(root_options, network_options, env)
           if root_options[:ip]
             addr = IPAddr.new(root_options[:ip])
           elsif addr.nil?
@@ -153,14 +153,14 @@ module VagrantPlugins
               network_name = "vagrant_network_#{network}"
             else
               if !existing_network.to_s.start_with?("vagrant_network")
-                env[:ui].warn(I18n.t("podman_provider.subnet_exists",
+                env[:ui].warn(I18n.t("docker_provider.subnet_exists",
                   network_name: existing_network,
                   subnet: network))
               end
               network_name = existing_network
             end
           end
-          @logger.debug("network process options #{network_name},  #{network_options[:subnet]},  #{network_options[:ip]}")
+
           [network_name, network_options]
         end
 
@@ -171,7 +171,7 @@ module VagrantPlugins
         # and instead just use the built-in `.prefix` method
         #
         # @param [Hash] root_options Root networking options
-        # @param [Hash] net_options Podman scoped networking options
+        # @param [Hash] net_options Docker scoped networking options
         # @param [Hash] env Local call env
         # @return [String, Hash] Network name and updated network_options
         def process_public_network(root_options, net_options, env)
@@ -240,7 +240,7 @@ module VagrantPlugins
             end
 
             # If the network doesn't already exist, gather available address range
-            # within subnet which podman can provide addressing
+            # within subnet which docker can provide addressing
             if !env[:machine].provider.driver.existing_named_network?(network_name)
               if !net_options[:gateway]
                 network_options[:gateway] = request_public_gateway(
@@ -255,7 +255,7 @@ module VagrantPlugins
 
         # Request the gateway address for the public network
         #
-        # @param [Hash] network_options Podman scoped networking options
+        # @param [Hash] network_options Docker scoped networking options
         # @param [String] interface The bridge interface used
         # @param [Hash] env Local call env
         # @return [String] Gateway address
@@ -264,7 +264,7 @@ module VagrantPlugins
           gateway = nil
           while !gateway
             gateway = env[:ui].ask(I18n.t(
-              "podman_provider.network_bridge_gateway_request",
+              "docker_provider.network_bridge_gateway_request",
               interface: interface,
               default_gateway: network_options[:gateway]) + " ",
               prefix: false
@@ -275,12 +275,12 @@ module VagrantPlugins
             begin
               gateway = IPAddr.new(gateway)
               if !subnet.include?(gateway)
-                env[:ui].warn(I18n.t("podman_provider.network_bridge_gateway_outofbounds",
+                env[:ui].warn(I18n.t("docker_provider.network_bridge_gateway_outofbounds",
                   gateway: gateway,
                   subnet: network_options[:subnet]) + "\n", prefix: false)
               end
             rescue IPAddr::InvalidAddressError
-              env[:ui].warn(I18n.t("podman_provider.network_bridge_gateway_invalid",
+              env[:ui].warn(I18n.t("docker_provider.network_bridge_gateway_invalid",
                 gateway: gateway) + "\n", prefix: false)
               gateway = nil
             end
@@ -288,14 +288,14 @@ module VagrantPlugins
           gateway.to_s
         end
 
-        # Request the IP range allowed for use by podman when creating a new
+        # Request the IP range allowed for use by docker when creating a new
         # public network
         #
         # TODO: When the Vagrant installer upgrades to Ruby 2.5.x,
         # remove all instances of the roundabout way of determining a prefix
         # and instead just use the built-in `.prefix` method
         #
-        # @param [Hash] network_options Podman scoped networking options
+        # @param [Hash] network_options Docker scoped networking options
         # @param [Socket::Ifaddr] interface The bridge interface used
         # @param [Hash] env Local call env
         # @return [String] Address range
@@ -303,13 +303,13 @@ module VagrantPlugins
           return network_options[:ip_range] if network_options[:ip_range]
           subnet = IPAddr.new(network_options[:subnet])
           env[:ui].info(I18n.t(
-            "podman_provider.network_bridge_iprange_info") + "\n",
+            "docker_provider.network_bridge_iprange_info") + "\n",
             prefix: false
           )
           range = nil
           while !range
             range = env[:ui].ask(I18n.t(
-              "podman_provider.network_bridge_iprange_request",
+              "docker_provider.network_bridge_iprange_request",
               interface: interface.name,
               default_range: network_options[:subnet]) + " ",
               prefix: false
@@ -323,7 +323,7 @@ module VagrantPlugins
                 netmask = interface.netmask.ip_unpack.first
                 prefix = IPAddr.new("255.255.255.255/#{netmask}").to_i.to_s(2).count("1")
                 env[:ui].warn(I18n.t(
-                  "podman_provider.network_bridge_iprange_outofbounds",
+                  "docker_provider.network_bridge_iprange_outofbounds",
                   subnet: network_options[:subnet],
                   range: "#{range}/#{prefix}"
                 ) + "\n", prefix: false)
@@ -331,7 +331,7 @@ module VagrantPlugins
               end
             rescue IPAddr::InvalidAddressError
               env[:ui].warn(I18n.t(
-                "podman_provider.network_bridge_iprange_invalid",
+                "docker_provider.network_bridge_iprange_invalid",
                 range: range) + "\n", prefix: false)
               range = nil
             end
@@ -347,18 +347,19 @@ module VagrantPlugins
           # If we are using a host VM, then don't worry about it
           machine = env[:machine]
           if machine.provider.host_vm?
-            @logger.debug("Not setting up networks because podman host_vm is in use")
+            @logger.debug("Not setting up networks because docker host_vm is in use")
             return @app.call(env)
           end
 
           connections = {}
           @@lock.synchronize do
-            machine.env.lock("podman-network-create", retry: true) do
-              env[:ui].info(I18n.t("podman_provider.network_create"))
+            machine.env.lock("docker-network-create", retry: true) do
+              env[:ui].info(I18n.t("docker_provider.network_create"))
               machine.config.vm.networks.each_with_index do |net_info, net_idx|
                 type, options = net_info
-                network_options = scoped_hash_override(options, :podman_network)
+                network_options = scoped_hash_override(options, :docker_network)
                 network_options.delete_if{|k,_| options.key?(k)}
+
                 case type
                 when :public_network
                   network_name, network_options = process_public_network(
@@ -369,13 +370,17 @@ module VagrantPlugins
                 else
                   next # unsupported type so ignore
                 end
+
                 if !network_name
                   raise Errors::NetworkInvalidOption, container: machine.name
                 end
+
                 if !machine.provider.driver.existing_named_network?(network_name)
+                  @logger.debug("Creating network #{network_name}")
                   cli_opts = generate_create_cli_arguments(network_options)
                   machine.provider.driver.create_network(network_name, cli_opts)
                 else
+                  @logger.debug("Network #{network_name} already created")
                   validate_network_configuration!(network_name, options, network_options, machine.provider.driver)
                 end
                 connections[net_idx] = network_name
@@ -383,7 +388,7 @@ module VagrantPlugins
             end
           end
 
-          env[:podman_connects] = connections
+          env[:docker_connects] = connections
           @app.call(env)
         end
       end
