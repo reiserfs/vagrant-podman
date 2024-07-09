@@ -62,9 +62,6 @@ module VagrantPlugins
 
       def create(params, **opts, &block)
         image   = params.fetch(:image)
-        network = params.fetch(:network)
-        user    = params.fetch(:user)
-        userns  = params.fetch(:userns)        
         links   = params.fetch(:links)
         ports   = Array(params[:ports])
         volumes = Array(params[:volumes])
@@ -105,7 +102,7 @@ module VagrantPlugins
         run_cmd += %W(-h #{params[:hostname]}) if params[:hostname]
         run_cmd += %W(--network #{params[:network]}) if params[:network]
         run_cmd += %W(--user #{params[:user]}) if params[:user]
-        run_cmd += %W(--userns #{params[:userns]}) if params[:userns]        
+        run_cmd += %W(--userns #{params[:userns]}) if params[:userns]  
         run_cmd << "-t" if params[:pty]
         run_cmd << "--rm=true" if params[:rm]
         run_cmd += params[:extra_args] if params[:extra_args]
