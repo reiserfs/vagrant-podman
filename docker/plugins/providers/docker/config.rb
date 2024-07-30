@@ -172,9 +172,7 @@ module VagrantPlugins
         @has_ssh    = UNSET_VALUE
         @host_vm_build_dir_options = UNSET_VALUE
         @image      = UNSET_VALUE
-        @network    = UNSET_VALUE
         @user    = UNSET_VALUE
-        @userns    = UNSET_VALUE        
         @name       = UNSET_VALUE
         @links      = []
         @pull       = UNSET_VALUE
@@ -262,9 +260,7 @@ module VagrantPlugins
         @env       ||= {}
         @has_ssh    = false if @has_ssh == UNSET_VALUE
         @image      = nil if @image == UNSET_VALUE
-        @network      = nil if @network == UNSET_VALUE
         @user       = nil if @user == UNSET_VALUE
-        @userns     = nil if @userns == UNSET_VALUE          
         @name       = nil if @name == UNSET_VALUE
         @pull       = false if @pull == UNSET_VALUE
         @ports      = [] if @ports == UNSET_VALUE

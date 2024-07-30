@@ -100,9 +100,7 @@ module VagrantPlugins
         }
         run_cmd += %W(--privileged) if params[:privileged]
         run_cmd += %W(-h #{params[:hostname]}) if params[:hostname]
-        run_cmd += %W(--network #{params[:network]}) if params[:network]
-        run_cmd += %W(--user #{params[:user]}) if params[:user]
-        run_cmd += %W(--userns #{params[:userns]}) if params[:userns]  
+        run_cmd += %W(-u #{params[:user]}) if params[:user]
         run_cmd << "-t" if params[:pty]
         run_cmd << "--rm=true" if params[:rm]
         run_cmd += params[:extra_args] if params[:extra_args]
