@@ -8,7 +8,7 @@ require_relative "../../../lib/vagrant/util/platform"
 module VagrantPlugins
   module DockerProvider
     class Config < Vagrant.plugin("2", :config)
-      attr_accessor :image, :cmd, :ports, :volumes, :privileged
+      attr_accessor :image, :cmd, :ports, :volumes, :privileged, :user
 
       # Additional arguments to pass to `docker build` when creating
       # an image using the build dir setting.

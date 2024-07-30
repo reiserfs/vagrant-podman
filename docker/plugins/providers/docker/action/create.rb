@@ -111,6 +111,7 @@ module VagrantPlugins
             env:        @provider_config.env,
             expose:     @provider_config.expose,
             extra_args: @provider_config.create_args,
+            user:       @provider_config.user,
             hostname:   @machine_config.vm.hostname,
             image:      image,
             links:      links,

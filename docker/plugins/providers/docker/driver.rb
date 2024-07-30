@@ -63,6 +63,7 @@ module VagrantPlugins
       def create(params, **opts, &block)
         image   = params.fetch(:image)
         links   = params.fetch(:links)
+        user    = params.fetch(:user)
         ports   = Array(params[:ports])
         volumes = Array(params[:volumes])
         name    = params.fetch(:name)
